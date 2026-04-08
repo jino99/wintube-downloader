@@ -1,7 +1,5 @@
 # WinTube v1.0.0 - MIT
 
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-
 param (
     [string]$Url,
     [switch]$Video,
@@ -10,16 +8,19 @@ param (
     [switch]$Version
 )
 
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 $ErrorActionPreference = 'Stop'
 $ProgressPreference    = 'SilentlyContinue'
 
-$WINTUBE_DIR = Join-Path $HOME '.wintube'
+$USER_DIR    = [Environment]::GetFolderPath('UserProfile')
+$WINTUBE_DIR = Join-Path $USER_DIR '.wintube'
 $YT_DLP_EXE  = Join-Path $WINTUBE_DIR 'yt-dlp.exe'
 $FFMPEG_EXE  = Join-Path $WINTUBE_DIR 'ffmpeg.exe'
 $FFPROBE_EXE = Join-Path $WINTUBE_DIR 'ffprobe.exe'
 $FFMPEG_ZIP  = Join-Path $WINTUBE_DIR 'ffmpeg_temp.zip'
 $FFMPEG_TEMP = Join-Path $WINTUBE_DIR 'ffmpeg_extract'
-$ERR_LOG     = Join-Path $env:TEMP    'wintube_stderr.log'
+$ERR_LOG     = Join-Path $WINTUBE_DIR 'wintube_stderr.log'
 
 $YT_DLP_URL = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe'
 $FFMPEG_URL = 'https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-gpl.zip'
@@ -36,10 +37,10 @@ function Write-Status {
 
 function Show-Header {
     Write-Host ''
-    Write-Host '  ╔══════════════════════════════════════════╗' -ForegroundColor Cyan
-    Write-Host '  ║         W I N T U B E  v1.0.0            ║' -ForegroundColor Cyan
-    Write-Host '  ║      Media Downloader for Windows        ║' -ForegroundColor Cyan
-    Write-Host '  ╚══════════════════════════════════════════╝' -ForegroundColor Cyan
+    Write-Host '  ===========================================' -ForegroundColor Cyan
+    Write-Host '         W I N T U B E  v1.0.0'              -ForegroundColor Cyan
+    Write-Host '      Media Downloader for Windows'           -ForegroundColor Cyan
+    Write-Host '  ===========================================' -ForegroundColor Cyan
     Write-Host ''
 }
 
@@ -47,55 +48,57 @@ function Initialize-Environment {
     if (-not (Test-Path $WINTUBE_DIR)) {
         New-Item -ItemType Directory -Path $WINTUBE_DIR -Force | Out-Null
     }
-    $dl = Join-Path ([Environment]::GetFolderPath('UserProfile')) 'Downloads'
+    $dl = Join-Path $USER_DIR 'Downloads'
     if (-not (Test-Path $dl)) {
         New-Item -ItemType Directory -Path $dl -Force | Out-Null
     }
 }
 
+function Install-YtDlp {
+    if (Test-Path $YT_DLP_EXE) { Write-Status 'yt-dlp already installed.' -Type Info; return }
+    Write-Status 'Downloading yt-dlp ...' -Type Action
+    try {
+        (New-Object System.Net.WebClient).DownloadFile($YT_DLP_URL, $YT_DLP_EXE)
+        Write-Status 'yt-dlp ready.' -Type Success
+    } catch {
+        Write-Status "Failed to download yt-dlp: $_" -Type Error
+        exit 1
+    }
+}
+
+function Install-FFmpeg {
+    if ((Test-Path $FFMPEG_EXE) -and (Test-Path $FFPROBE_EXE)) {
+        Write-Status 'FFmpeg already installed.' -Type Info; return
+    }
+    Write-Status 'Downloading FFmpeg (~70 MB) ...' -Type Action
+    try {
+        (New-Object System.Net.WebClient).DownloadFile($FFMPEG_URL, $FFMPEG_ZIP)
+
+        if (Test-Path $FFMPEG_TEMP) { Remove-Item $FFMPEG_TEMP -Recurse -Force }
+        New-Item -ItemType Directory -Path $FFMPEG_TEMP -Force | Out-Null
+        Expand-Archive -Path $FFMPEG_ZIP -DestinationPath $FFMPEG_TEMP -Force
+
+        $binDir = Get-ChildItem -LiteralPath $FFMPEG_TEMP -Recurse -Filter 'ffmpeg.exe' -ErrorAction SilentlyContinue |
+                  Select-Object -First 1 | ForEach-Object { $_.DirectoryName }
+
+        if (-not $binDir) { throw 'ffmpeg.exe not found inside ZIP.' }
+
+        Copy-Item (Join-Path $binDir 'ffmpeg.exe')  $FFMPEG_EXE  -Force
+        Copy-Item (Join-Path $binDir 'ffprobe.exe') $FFPROBE_EXE -Force
+        Write-Status 'FFmpeg ready.' -Type Success
+    } catch {
+        Write-Status "Failed to install FFmpeg: $_" -Type Error
+        exit 1
+    } finally {
+        if (Test-Path $FFMPEG_ZIP)  { Remove-Item $FFMPEG_ZIP  -Force -ErrorAction SilentlyContinue }
+        if (Test-Path $FFMPEG_TEMP) { Remove-Item $FFMPEG_TEMP -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+}
+
 function Install-Dependencies {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
-    if (-not (Test-Path $YT_DLP_EXE)) {
-        Write-Status 'Downloading yt-dlp ...' -Type Action
-        try {
-            Invoke-WebRequest -Uri $YT_DLP_URL -OutFile $YT_DLP_EXE -UseBasicParsing -MaximumRetryCount 3 -TimeoutSec 120
-            Write-Status 'yt-dlp ready.' -Type Success
-        } catch {
-            Write-Status "Failed to download yt-dlp: $_" -Type Error
-            exit 1
-        }
-    } else {
-        Write-Status 'yt-dlp already installed.' -Type Info
-    }
-
-    if (-not (Test-Path $FFMPEG_EXE) -or -not (Test-Path $FFPROBE_EXE)) {
-        Write-Status 'Downloading FFmpeg (~70 MB) ...' -Type Action
-        try {
-            Invoke-WebRequest -Uri $FFMPEG_URL -OutFile $FFMPEG_ZIP -UseBasicParsing -MaximumRetryCount 3 -TimeoutSec 300
-
-            if (Test-Path $FFMPEG_TEMP) { Remove-Item $FFMPEG_TEMP -Recurse -Force }
-            New-Item -ItemType Directory -Path $FFMPEG_TEMP -Force | Out-Null
-            Expand-Archive -Path $FFMPEG_ZIP -DestinationPath $FFMPEG_TEMP -Force
-
-            $binDir = Get-ChildItem -LiteralPath $FFMPEG_TEMP -Recurse -Filter 'ffmpeg.exe' -ErrorAction SilentlyContinue |
-                      Select-Object -First 1 | ForEach-Object { $_.DirectoryName }
-
-            if (-not $binDir) { throw 'ffmpeg.exe not found inside ZIP.' }
-
-            Copy-Item (Join-Path $binDir 'ffmpeg.exe')  $FFMPEG_EXE  -Force
-            Copy-Item (Join-Path $binDir 'ffprobe.exe') $FFPROBE_EXE -Force
-            Write-Status 'FFmpeg ready.' -Type Success
-        } catch {
-            Write-Status "Failed to install FFmpeg: $_" -Type Error
-            exit 1
-        } finally {
-            if (Test-Path $FFMPEG_ZIP)  { Remove-Item $FFMPEG_ZIP  -Force -ErrorAction SilentlyContinue }
-            if (Test-Path $FFMPEG_TEMP) { Remove-Item $FFMPEG_TEMP -Recurse -Force -ErrorAction SilentlyContinue }
-        }
-    } else {
-        Write-Status 'FFmpeg already installed.' -Type Info
-    }
+    Install-YtDlp
+    Install-FFmpeg
 }
 
 function Get-UserSelection {
@@ -125,7 +128,7 @@ function Invoke-MediaDownload {
         [Parameter(Mandatory)][ValidateSet('Video','Audio')][string]$Mode
     )
 
-    $downloadsDir   = Join-Path ([Environment]::GetFolderPath('UserProfile')) 'Downloads'
+    $downloadsDir   = Join-Path $USER_DIR 'Downloads'
     $outputTemplate = Join-Path $downloadsDir '%(title)s.%(ext)s'
 
     $ytArgs = [System.Collections.Generic.List[string]]::new()
@@ -133,8 +136,6 @@ function Invoke-MediaDownload {
         '--no-playlist',
         '--retries',          '5',
         '--fragment-retries', '5',
-        '--no-abort-on-error',
-        '--no-check-certificate',
         '--newline',
         '--ffmpeg-location',  $WINTUBE_DIR,
         '--output',           $outputTemplate
@@ -157,7 +158,7 @@ function Invoke-MediaDownload {
     if (Test-Path $ERR_LOG) { Remove-Item $ERR_LOG -Force -ErrorAction SilentlyContinue }
 
     try {
-        $proc = Start-Process -FilePath $YT_DLP_EXE -ArgumentList $ytArgs `
+        $proc = Start-Process -FilePath $YT_DLP_EXE -ArgumentList ([string[]]$ytArgs) `
                     -NoNewWindow -Wait -PassThru -RedirectStandardError $ERR_LOG
 
         if ($proc.ExitCode -eq 0) {

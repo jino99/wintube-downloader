@@ -22,7 +22,7 @@
 ## Quick Install
 
 ```powershell
-irm https://github.com/jino99/wintube-downloader | iex
+irm https://raw.githubusercontent.com/jino99/wintube-downloader/main/wintube.ps1 | iex
 ```
 
 ---
@@ -33,18 +33,20 @@ irm https://github.com/jino99/wintube-downloader | iex
 # Interactive mode
 .\wintube.ps1
 
-# Download video
-.\wintube.ps1 -Url "https://example.com/video" -Mode 1
+# Download video (MP4)
+.\wintube.ps1 -Url "https://example.com/video" -Video
 
 # Download audio (MP3)
-.\wintube.ps1 -Url "https://example.com/video" -Mode 2
+.\wintube.ps1 -Url "https://example.com/video" -Audio
 ```
 
 | Flag | Description |
 |------|-------------|
 | `-Url` | Media URL |
-| `-Mode` | 1 = Video, 2 = Audio |
+| `-Video` | Download as MP4 (default) |
+| `-Audio` | Extract as MP3 |
 | `-Help` | Show help |
+| `-Version` | Show version |
 
 ---
 
@@ -67,4 +69,4 @@ irm https://github.com/jino99/wintube-downloader | iex
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE.txt)
