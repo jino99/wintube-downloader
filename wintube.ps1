@@ -38,7 +38,7 @@ function Show-Header {
     Write-Host ''
     Write-Host '  ╔══════════════════════════════════════════╗' -ForegroundColor Cyan
     Write-Host '  ║         W I N T U B E  v1.0.0            ║' -ForegroundColor Cyan
-    Write-Host '  ║    High-Fidelity Media Downloader         ║' -ForegroundColor Cyan
+    Write-Host '  ║      Media Downloader for Windows        ║' -ForegroundColor Cyan
     Write-Host '  ╚══════════════════════════════════════════╝' -ForegroundColor Cyan
     Write-Host ''
 }
