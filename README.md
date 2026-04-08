@@ -1,16 +1,21 @@
 # WinTube
 
-### Blazing Fast Media Downloader for Windows
+### Fast Media Downloader for Windows
+
 <p align="left">
-  <img src="https://img.shields.io/badge/PowerShell-Script-012456?style=for-the-badge" alt="PowerShell">
-  <img src="https://img.shields.io/github/license/jino99/wintube-downloader?style=for-the-badge&color=ff00d4" alt="License">
-  <img src="https://img.shields.io/github/stars/jino99/wintube-downloader?style=for-the-badge&color=ffcc00" alt="Stars">
-  <img src="https://img.shields.io/github/forks/jino99/wintube-downloader?style=for-the-badge&color=ff6b6b" alt="Forks">
-  <img src="https://img.shields.io/badge/Platform-Windows-0078D4?style=for-the-badge" alt="Platform">
+  <img src="https://img.shields.io/badge/PowerShell-5.1+-5391FE?logo=powershell&logoColor=white" alt="PowerShell">
+  <img src="https://img.shields.io/badge/Windows-10%20|%2011-0078D6?logo=windows&logoColor=white" alt="Windows">
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
+  <img src="https://img.shields.io/badge/Maintained-yes-success" alt="Maintained">
+  <img src="https://img.shields.io/badge/CI-ready-blue" alt="CI Ready">
+</p>
 
-![Banner](https://capsule-render.vercel.app/api?type=waving&color=gradient&height=200&section=header&text=WinTube&fontSize=80&animation=fadeIn&fontAlignY=40)
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=200&section=header&text=WinTube&fontSize=80&animation=fadeIn&fontAlignY=40" alt="WinTube Banner">
+</p>
 
-> **Download anything. Anywhere. Anytime.** No ads. No tracking. Pure speed.
+> **Download anything. Anywhere. Anytime.**  
+> No ads. No tracking. Pure speed.
 
 ---
 
